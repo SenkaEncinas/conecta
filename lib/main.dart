@@ -1,20 +1,23 @@
 import 'package:flutter/material.dart';
+import 'screens/LoginScreen.dart'; // Ajusta la ruta según tu proyecto
 
 void main() {
-  runApp(const MainApp());
+  runApp(const ConectaApp());
 }
 
-class MainApp extends StatelessWidget {
-  const MainApp({super.key});
+class ConectaApp extends StatelessWidget {
+  const ConectaApp({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      home: Scaffold(
-        body: Center(
-          child: Text('Hello World!'),
-        ),
+    return MaterialApp(
+      debugShowCheckedModeBanner: false,
+      title: 'Conecta',
+      theme: ThemeData(
+        primarySwatch: Colors.blue,
+        visualDensity: VisualDensity.adaptivePlatformDensity,
       ),
+      home: const LoginScreen(),
     );
   }
 }
