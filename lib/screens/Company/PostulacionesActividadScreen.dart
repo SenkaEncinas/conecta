@@ -148,7 +148,7 @@ class _PostulacionesActividadScreenState
               child: const Text("Guardar"),
               onPressed: () {
                 final value = int.tryParse(controller.text);
-                if (value == null || value < 0) {
+                if (value == null || value <= 0) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
                       content: Text("Ingresa un número válido de horas"),
@@ -181,52 +181,96 @@ class _PostulacionesActividadScreenState
     );
 
     if (ok) {
-      // Generar el certificado después de finalizar la postulación
-      await _generarCertificado(p, result);
+      // Ahora vamos a pedir el enlace al PDF
+      await _ingresarLinkPDF(p, result);
     }
 
     if (ok) _refresh();
   }
 
-  // Función para generar el certificado y abrir el PDF
-  Future<void> _generarCertificado(PostulacionDto p, int horasCompletadas) async {
-    final certificadoDto = CertificadoDto(
-      id: 0,
-      nombreVoluntario: p.nombreUsuario,
-      nombreEmpresa: "",  // Aquí puedes agregar el nombre de la empresa
-      nombreActividad: p.nombreActividad,
-      horasCertificadas: horasCompletadas,
-      fechaEmision: DateTime.now(),
-      urlCertificadoPDF: "",  // Asumimos que el backend genera este URL
+  // Función para ingresar manualmente la URL del PDF
+  Future<void> _ingresarLinkPDF(PostulacionDto p, int horasCompletadas) async {
+  final controller = TextEditingController();
+
+  final result = await showDialog<String>(
+    context: context,
+    builder: (context) {
+      return AlertDialog(
+        title: Text("Ingresar URL del certificado"),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              "Postulación #${p.id} - ${p.nombreUsuario}\n"
+              "Actividad: ${p.nombreActividad}\n\n"
+              "Ingresa el enlace al PDF del certificado:",
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: controller,
+              keyboardType: TextInputType.url,
+              decoration: const InputDecoration(
+                labelText: "URL del PDF",
+                border: OutlineInputBorder(),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            child: const Text("Cancelar"),
+            onPressed: () => Navigator.pop(context),
+          ),
+          FilledButton(
+            child: const Text("Guardar"),
+            onPressed: () {
+              final url = controller.text.trim();
+              if (url.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text("La URL no puede estar vacía")),
+                );
+                return;
+              }
+              Navigator.pop<String>(context, url);
+            },
+          ),
+        ],
+      );
+    },
+  );
+
+  if (result == null) return;
+
+  // Debugging: Verificamos que el usuarioId es el correcto
+  debugPrint("🚀 Creando certificado para usuarioId: ${p.usuarioId}");
+
+  // Asegurándonos de usar el usuarioId correcto de la postulación
+  final certificadoDto = CertificadoDto(
+    id: 0,
+    usuarioId: p.usuarioId,  // Aquí estamos asegurando que usamos el usuarioId correcto
+    nombreVoluntario: p.nombreUsuario,
+    nombreEmpresa: "",  // Aquí puedes agregar el nombre de la empresa si lo necesitas
+    nombreActividad: p.nombreActividad,
+    horasCertificadas: horasCompletadas,
+    fechaEmision: DateTime.now(),
+    urlCertificadoPDF: result,  // La URL proporcionada
+  );
+
+  setState(() => _accionEnProgreso = true);
+  final certificado = await _certificadoService.generarCertificado(certificadoDto);
+  setState(() => _accionEnProgreso = false);
+
+  if (certificado != null) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text("Certificado generado para ${p.nombreUsuario}")),
     );
-
-    setState(() => _accionEnProgreso = true);
-    final certificado = await _certificadoService.generarCertificado(certificadoDto);
-    setState(() => _accionEnProgreso = false);
-
-    if (certificado != null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Certificado generado para ${p.nombreUsuario}")),
-      );
-      // Abre el PDF del certificado si se generó
-      _abrirPDF(certificado.urlCertificadoPDF);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No se pudo generar el certificado")),
-      );
-    }
+  } else {
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text("No se pudo generar el certificado")),
+    );
   }
+}
 
-  // Función para abrir el PDF usando url_launcher
-  Future<void> _abrirPDF(String url) async {
-    if (await canLaunch(url)) {
-      await launch(url);
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("No se pudo abrir el PDF")),
-      );
-    }
-  }
 
   @override
   Widget build(BuildContext context) {

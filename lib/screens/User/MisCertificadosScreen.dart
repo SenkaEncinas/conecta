@@ -1,6 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:conectaflutter/Services/CertificadoService.dart';
 import 'package:conectaflutter/DTO/Core/CertificadoDto.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class MisCertificadosScreen extends StatefulWidget {
   final int? usuarioId;
@@ -21,6 +23,7 @@ class _MisCertificadosScreenState extends State<MisCertificadosScreen> {
   @override
   void initState() {
     super.initState();
+    // Asegurarnos de que el usuarioId no sea nulo y realizar la consulta
     _future = _getCertificadosUsuarioSafe();
   }
 
@@ -29,14 +32,14 @@ class _MisCertificadosScreenState extends State<MisCertificadosScreen> {
     final id = widget.usuarioId;
     if (id == null) {
       debugPrint("⚠ MisCertificadosScreen: usuarioId es null");
-      // Podrías lanzar una excepción para que se vea en pantalla:
-      // throw Exception("Usuario no válido");
       return [];
     }
 
     try {
       // ✅ Llamada real al service
-      return await _certificadoService.getCertificadosByUsuario(id);
+      final certificados = await _certificadoService.getCertificadosByUsuario(id);
+      debugPrint("🚀 Certificados obtenidos: ${certificados.length}");
+      return certificados;
     } catch (e, st) {
       debugPrint("❌ Error obteniendo certificados: $e\n$st");
       // Deja que el FutureBuilder muestre el error:
@@ -108,7 +111,8 @@ class _MisCertificadosScreenState extends State<MisCertificadosScreen> {
                   ),
                   trailing: const Icon(Icons.open_in_new),
                   onTap: () {
-                    // TODO: abrir PDF con c.urlCertificadoPDF usando url_launcher o similar
+                    // Mostrar el PDF cuando se haga clic
+                    _abrirPDF(c.urlCertificadoPDF);
                   },
                 ),
               );
@@ -117,5 +121,16 @@ class _MisCertificadosScreenState extends State<MisCertificadosScreen> {
         },
       ),
     );
+  }
+
+  // Función para abrir el PDF usando url_launcher
+  Future<void> _abrirPDF(String url) async {
+    if (await canLaunch(url)) {
+      await launch(url);
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("No se pudo abrir el PDF")),
+      );
+    }
   }
 }
