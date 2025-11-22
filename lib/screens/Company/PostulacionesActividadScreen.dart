@@ -1,10 +1,10 @@
+import 'package:conectaflutter/DTO/Core/CertificadoDto.dart';
 import 'package:conectaflutter/services/PostulacionesController.dart';
 import 'package:flutter/material.dart';
 import 'package:conectaflutter/Services/ActividadService.dart';
 import 'package:conectaflutter/Services/CertificadoService.dart';
 import 'package:conectaflutter/DTO/Core/PostulacionDto.dart';
-import 'package:conectaflutter/DTO/Core/CertificadoDto.dart';
-import 'package:url_launcher/url_launcher.dart';  // Importamos url_launcher
+import 'package:conectaflutter/DTO/Core/GenerarCertificadoDto.dart';
 
 class PostulacionesActividadScreen extends StatefulWidget {
   final int actividadId;
@@ -33,7 +33,8 @@ class _PostulacionesActividadScreenState
   @override
   void initState() {
     super.initState();
-    _future = _actividadService.getPostulacionesPorActividad(widget.actividadId);
+    _future =
+        _actividadService.getPostulacionesPorActividad(widget.actividadId);
   }
 
   Future<void> _refresh() async {
@@ -86,9 +87,11 @@ class _PostulacionesActividadScreenState
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok
-            ? "Postulación #${p.id} aprobada"
-            : "No se pudo aprobar la postulación"),
+        content: Text(
+          ok
+              ? "Postulación #${p.id} aprobada"
+              : "No se pudo aprobar la postulación",
+        ),
       ),
     );
     if (ok) _refresh();
@@ -102,9 +105,11 @@ class _PostulacionesActividadScreenState
 
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text(ok
-            ? "Postulación #${p.id} rechazada"
-            : "No se pudo rechazar la postulación"),
+        content: Text(
+          ok
+              ? "Postulación #${p.id} rechazada"
+              : "No se pudo rechazar la postulación",
+        ),
       ),
     );
     if (ok) _refresh();
@@ -115,7 +120,7 @@ class _PostulacionesActividadScreenState
       text: p.horasCompletadas > 0 ? p.horasCompletadas.toString() : "",
     );
 
-    final result = await showDialog<int>(
+    final horas = await showDialog<int>(
       context: context,
       builder: (context) {
         return AlertDialog(
@@ -164,113 +169,60 @@ class _PostulacionesActividadScreenState
       },
     );
 
-    if (result == null) return;
+    if (horas == null) return;
 
     setState(() => _accionEnProgreso = true);
-    final ok =
-        await _postulacionService.finalizarPostulacion(p.id, result);
+
+    // 1) Finalizar la postulación en el backend
+    final okFinalizar =
+        await _postulacionService.finalizarPostulacion(p.id, horas);
+
+    if (!okFinalizar) {
+      if (!mounted) return;
+      setState(() => _accionEnProgreso = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "No se pudo finalizar la postulación #${p.id}",
+          ),
+        ),
+      );
+      return;
+    }
+
+    // 2) Generar certificado usando el nuevo GenerarCertificadoDto
+    final generarDto = GenerarCertificadoDto(
+      usuarioId: p.usuarioId,
+      actividadId: widget.actividadId,
+      horasCertificadas: horas,
+    );
+
+    final certificado =
+        await _certificadoService.generarCertificado(generarDto as CertificadoDto);
+
     if (!mounted) return;
     setState(() => _accionEnProgreso = false);
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(ok
-            ? "Postulación #${p.id} finalizada con $result horas"
-            : "No se pudo finalizar la postulación"),
-      ),
-    );
-
-    if (ok) {
-      // Ahora vamos a pedir el enlace al PDF
-      await _ingresarLinkPDF(p, result);
+    if (certificado != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            "Postulación finalizada y certificado generado para ${p.nombreUsuario}",
+          ),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            "Se finalizó la postulación, pero no se pudo generar el certificado",
+          ),
+        ),
+      );
     }
 
-    if (ok) _refresh();
+    _refresh();
   }
-
-  // Función para ingresar manualmente la URL del PDF
-  Future<void> _ingresarLinkPDF(PostulacionDto p, int horasCompletadas) async {
-  final controller = TextEditingController();
-
-  final result = await showDialog<String>(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        title: Text("Ingresar URL del certificado"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "Postulación #${p.id} - ${p.nombreUsuario}\n"
-              "Actividad: ${p.nombreActividad}\n\n"
-              "Ingresa el enlace al PDF del certificado:",
-            ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: controller,
-              keyboardType: TextInputType.url,
-              decoration: const InputDecoration(
-                labelText: "URL del PDF",
-                border: OutlineInputBorder(),
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            child: const Text("Cancelar"),
-            onPressed: () => Navigator.pop(context),
-          ),
-          FilledButton(
-            child: const Text("Guardar"),
-            onPressed: () {
-              final url = controller.text.trim();
-              if (url.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("La URL no puede estar vacía")),
-                );
-                return;
-              }
-              Navigator.pop<String>(context, url);
-            },
-          ),
-        ],
-      );
-    },
-  );
-
-  if (result == null) return;
-
-  // Debugging: Verificamos que el usuarioId es el correcto
-  debugPrint("🚀 Creando certificado para usuarioId: ${p.usuarioId}");
-
-  // Asegurándonos de usar el usuarioId correcto de la postulación
-  final certificadoDto = CertificadoDto(
-    id: 0,
-    usuarioId: p.usuarioId,  // Aquí estamos asegurando que usamos el usuarioId correcto
-    nombreVoluntario: p.nombreUsuario,
-    nombreEmpresa: "",  // Aquí puedes agregar el nombre de la empresa si lo necesitas
-    nombreActividad: p.nombreActividad,
-    horasCertificadas: horasCompletadas,
-    fechaEmision: DateTime.now(),
-    urlCertificadoPDF: result,  // La URL proporcionada
-  );
-
-  setState(() => _accionEnProgreso = true);
-  final certificado = await _certificadoService.generarCertificado(certificadoDto);
-  setState(() => _accionEnProgreso = false);
-
-  if (certificado != null) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text("Certificado generado para ${p.nombreUsuario}")),
-    );
-  } else {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text("No se pudo generar el certificado")),
-    );
-  }
-}
-
 
   @override
   Widget build(BuildContext context) {
@@ -346,7 +298,9 @@ class _PostulacionesActividadScreenState
 
                 final estado = p.estado;
                 final double progreso = p.horasAsignadas > 0
-                    ? (p.horasCompletadas / p.horasAsignadas).clamp(0, 1).toDouble()
+                    ? (p.horasCompletadas / p.horasAsignadas)
+                        .clamp(0, 1)
+                        .toDouble()
                     : 0.0;
 
                 return Card(
@@ -396,24 +350,21 @@ class _PostulacionesActividadScreenState
                           _finalizar(p);
                         }
                       },
-                      itemBuilder: (context) => [
-                        const PopupMenuItem(
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
                           value: 'aprobar',
                           child: Text('Aprobar'),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'rechazar',
                           child: Text('Rechazar'),
                         ),
-                        const PopupMenuItem(
+                        PopupMenuItem(
                           value: 'finalizar',
                           child: Text('Finalizar (horas)'),
                         ),
                       ],
                     ),
-                    onTap: () {
-                      // Si quieres, aquí puedes abrir un detalle más grande.
-                    },
                   ),
                 );
               },

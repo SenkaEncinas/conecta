@@ -4,7 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PostulacionService {
-  final String _baseUrl = 'https://app-251121223250.azurewebsites.net/api';
+  final String _baseUrl = 'https://app-251122032447.azurewebsites.net/api';
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();

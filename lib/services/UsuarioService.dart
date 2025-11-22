@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class UsuarioService {
   final String baseUrl =
-      'https://app-251121223250.azurewebsites.net/api/usuarios';
+      'https://app-251122032447.azurewebsites.net/api/usuarios';
 
   // Token público para headers
   Future<String?> getToken() async {

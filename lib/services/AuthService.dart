@@ -8,7 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthService {
-  final String _baseUrl = 'https://app-251121223250.azurewebsites.net/api/auth';
+  final String _baseUrl = 'https://app-251122032447.azurewebsites.net/api/auth';
 
   // guardar token
   Future<void> saveToken(String token) async {

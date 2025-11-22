@@ -1,11 +1,12 @@
 import 'dart:convert';
 import 'package:conectaflutter/DTO/Core/CertificadoDto.dart';
+import 'package:conectaflutter/DTO/Core/GenerarCertificadoDto.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class CertificadoService {
   final String baseUrl =
-      'https://app-251121223250.azurewebsites.net/api/certificados';
+      'https://app-251122032447.azurewebsites.net/api/certificados';
 
   Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
@@ -14,8 +15,11 @@ class CertificadoService {
 
   // -------------------------------------------------------
   // POST /api/certificados/generar  (Empresa o Admin)
+  // Usa GenerarCertificadoDto como entrada
+  // y devuelve un CertificadoDto creado por el backend
   // -------------------------------------------------------
-  Future<CertificadoDto?> generarCertificado(CertificadoDto dto) async {
+  Future<CertificadoDto?> generarCertificado(
+      GenerarCertificadoDto dto) async {
     final token = await _getToken();
     if (token == null) return null;
 
@@ -29,9 +33,11 @@ class CertificadoService {
     );
 
     if (response.statusCode == 200 || response.statusCode == 201) {
-      return CertificadoDto.fromJson(jsonDecode(response.body));
+      final json = jsonDecode(response.body);
+      return CertificadoDto.fromJson(json);
     } else {
-      print('Error generarCertificado: ${response.statusCode} - ${response.body}');
+      print(
+          'Error generarCertificado: ${response.statusCode} - ${response.body}');
       return null;
     }
   }
@@ -54,15 +60,17 @@ class CertificadoService {
       final List data = jsonDecode(response.body);
       return data.map((e) => CertificadoDto.fromJson(e)).toList();
     } else {
-      print("Error getCertificados: ${response.statusCode} - ${response.body}");
+      print(
+          "Error getCertificados: ${response.statusCode} - ${response.body}");
       return [];
     }
   }
 
   // -------------------------------------------------------
-  // NUEVO: GET /api/certificados/usuario/{id}
+  // GET /api/certificados/usuario/{id}
   // -------------------------------------------------------
-  Future<List<CertificadoDto>> getCertificadosByUsuario(int usuarioId) async {
+  Future<List<CertificadoDto>> getCertificadosByUsuario(
+      int usuarioId) async {
     final token = await _getToken();
     if (token == null) return [];
 
@@ -78,7 +86,7 @@ class CertificadoService {
       final List data = jsonDecode(response.body);
       return data.map((e) => CertificadoDto.fromJson(e)).toList();
     } else if (response.statusCode == 404) {
-      // El backend devuelve NotFound si no hay certificados para ese usuario
+      // No hay certificados para el usuario
       return [];
     } else {
       print(

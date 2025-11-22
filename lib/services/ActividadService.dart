@@ -8,7 +8,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 class ActividadService {
   // Base del API (misma que ya usas en otros services)
   final String _baseApiUrl =
-      'https://app-251121223250.azurewebsites.net/api';
+      'https://app-251122032447.azurewebsites.net/api';
 
   String get _actividadesUrl => '$_baseApiUrl/actividades';
   String get _empresasUrl => '$_baseApiUrl/empresas';
