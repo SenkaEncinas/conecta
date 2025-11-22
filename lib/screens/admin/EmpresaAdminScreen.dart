@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:conectaflutter/Services/EmpresaService.dart';
 import 'package:conectaflutter/DTO/Core/EmpresaDto.dart';
+import 'package:conectaflutter/DTO/Entities/UpdateEmpresaDto.dart';
 
 class EmpresasAdminScreen extends StatefulWidget {
   const EmpresasAdminScreen({super.key});
@@ -69,6 +70,162 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
     }
   }
 
+  Future<void> _editarEmpresa(EmpresaDto empresa) async {
+    if (empresa.id == null) return;
+
+    final parentContext = context;
+
+    final nombreController =
+        TextEditingController(text: empresa.nombre ?? '');
+    final descripcionController =
+        TextEditingController(text: empresa.descripcion ?? '');
+    final direccionController =
+        TextEditingController(text: empresa.direccion ?? '');
+    final logoUrlController =
+        TextEditingController(text: empresa.logoURL ?? '');
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Editar empresa"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nombreController,
+                  decoration: const InputDecoration(
+                    labelText: "Nombre",
+                    hintText: "Nombre de la empresa",
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: descripcionController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: "Descripción",
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: direccionController,
+                  decoration: const InputDecoration(
+                    labelText: "Dirección",
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: logoUrlController,
+                  decoration: const InputDecoration(
+                    labelText: "Logo URL",
+                    hintText: "https://...",
+                  ),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text("Cancelar"),
+            ),
+            TextButton(
+              onPressed: () async {
+                final nombre = nombreController.text.trim();
+                if (nombre.isEmpty) {
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                    const SnackBar(
+                      content: Text("El nombre no puede estar vacío."),
+                    ),
+                  );
+                  return;
+                }
+
+                final descripcion = descripcionController.text.trim();
+                final direccion = direccionController.text.trim();
+                final logo = logoUrlController.text.trim();
+
+                final dto = UpdateEmpresaDto(
+                  nombre: nombre,
+                  descripcion:
+                      descripcion.isEmpty ? null : descripcion,
+                  direccion: direccion.isEmpty ? null : direccion,
+                  logoURL: logo.isEmpty ? null : logo,
+                );
+
+                final ok = await _empresaService.updateEmpresa(
+                  empresa.id!,
+                  dto,
+                );
+
+                if (ok) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                    const SnackBar(
+                      content: Text("Empresa actualizada correctamente."),
+                    ),
+                  );
+                  Navigator.pop(dialogContext, true);
+                } else {
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                    const SnackBar(
+                      content: Text("No se pudo actualizar la empresa."),
+                    ),
+                  );
+                }
+              },
+              child: const Text("Guardar"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      _refresh();
+    }
+  }
+
+  Widget _buildLogo(EmpresaDto e) {
+  final url = e.logoURL;
+
+  // Si no hay URL → ícono default
+  if (url == null || url.isEmpty) {
+    return const CircleAvatar(
+      radius: 22,
+      child: Icon(Icons.business),
+    );
+  }
+
+  return CircleAvatar(
+    radius: 22,
+    backgroundColor: Colors.grey.shade200,
+    child: ClipOval(
+      child: Image.network(
+        url,
+        fit: BoxFit.cover,
+        width: 44,
+        height: 44,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return const Center(
+            child: SizedBox(
+              width: 20,
+              height: 20,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            ),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return const Icon(Icons.broken_image, size: 28, color: Colors.grey);
+        },
+      ),
+    ),
+  );
+}
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -114,7 +271,7 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
                 return Card(
                   elevation: 2,
                   child: ListTile(
-                    leading: const Icon(Icons.business),
+                    leading: _buildLogo(e),
                     title: Text(e.nombre ?? "Sin nombre"),
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -134,7 +291,10 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // TODO: botón editar empresa con updateEmpresa
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () => _editarEmpresa(e),
+                        ),
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () => _eliminarEmpresa(e),

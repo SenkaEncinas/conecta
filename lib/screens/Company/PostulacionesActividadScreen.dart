@@ -1,4 +1,3 @@
-import 'package:conectaflutter/DTO/Core/CertificadoDto.dart';
 import 'package:conectaflutter/services/PostulacionesController.dart';
 import 'package:flutter/material.dart';
 import 'package:conectaflutter/Services/ActividadService.dart';
@@ -116,6 +115,7 @@ class _PostulacionesActividadScreenState
   }
 
   Future<void> _finalizar(PostulacionDto p) async {
+    // Primer diálogo: ingresar horas
     final controller = TextEditingController(
       text: p.horasCompletadas > 0 ? p.horasCompletadas.toString() : "",
     );
@@ -190,7 +190,43 @@ class _PostulacionesActividadScreenState
       return;
     }
 
-    // 2) Generar certificado usando el nuevo GenerarCertificadoDto
+    // 2) Segundo diálogo: confirmar generación del certificado
+    final generar = await showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text("Generar certificado"),
+          content: Text(
+            "La postulación de ${p.nombreUsuario} fue finalizada con $horas horas.\n\n"
+            "¿Quieres generar ahora su certificado?",
+          ),
+          actions: [
+            TextButton(
+              child: const Text("No"),
+              onPressed: () => Navigator.pop(context, false),
+            ),
+            FilledButton(
+              child: const Text("Sí, generar"),
+              onPressed: () => Navigator.pop(context, true),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (generar != true) {
+      if (!mounted) return;
+      setState(() => _accionEnProgreso = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Postulación finalizada. Certificado no generado."),
+        ),
+      );
+      _refresh();
+      return;
+    }
+
+    // 3) Generar certificado usando el nuevo GenerarCertificadoDto
     final generarDto = GenerarCertificadoDto(
       usuarioId: p.usuarioId,
       actividadId: widget.actividadId,
@@ -198,7 +234,7 @@ class _PostulacionesActividadScreenState
     );
 
     final certificado =
-        await _certificadoService.generarCertificado(generarDto as CertificadoDto);
+        await _certificadoService.generarCertificado(generarDto);
 
     if (!mounted) return;
     setState(() => _accionEnProgreso = false);
@@ -207,7 +243,7 @@ class _PostulacionesActividadScreenState
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            "Postulación finalizada y certificado generado para ${p.nombreUsuario}",
+            "Certificado generado para ${p.nombreUsuario}",
           ),
         ),
       );

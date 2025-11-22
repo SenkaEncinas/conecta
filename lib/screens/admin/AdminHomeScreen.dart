@@ -1,4 +1,10 @@
 import 'package:conectaflutter/screens/admin/EmpresaAdminScreen.dart';
+import 'package:conectaflutter/screens/admin/ActividadAdminScreen.dart';
+import 'package:conectaflutter/screens/admin/UsuariosAdminScreen.dart';
+// futuros:
+// import 'package:conectaflutter/screens/admin/PostulacionesAdminScreen.dart';
+// import 'package:conectaflutter/screens/admin/CertificadosAdminScreen.dart';
+
 import 'package:flutter/material.dart';
 import 'package:conectaflutter/DTO/Core/UsuarioDto.dart';
 
@@ -31,7 +37,7 @@ class AdminHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 30),
 
-            // Gestionar empresas
+            // Empresas
             SizedBox(
               width: double.infinity,
               child: ElevatedButton.icon(
@@ -49,16 +55,17 @@ class AdminHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
-            // TODO futuros
+            // Actividades
             SizedBox(
               width: double.infinity,
-              child: OutlinedButton.icon(
+              child: ElevatedButton.icon(
                 icon: const Icon(Icons.event),
-                label: const Text("Actividades (TODO)"),
+                label: const Text("Actividades"),
                 onPressed: () {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text("📝 TODO: Pantalla de gestión de actividades"),
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const ActividadesAdminScreen(),
                     ),
                   );
                 },
@@ -66,15 +73,52 @@ class AdminHomeScreen extends StatelessWidget {
             ),
             const SizedBox(height: 12),
 
+            // Usuarios
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.people),
+                label: const Text("Usuarios"),
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => const UsuariosAdminScreen(),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // FUTURO: Postulaciones
             SizedBox(
               width: double.infinity,
               child: OutlinedButton.icon(
-                icon: const Icon(Icons.people),
-                label: const Text("Usuarios (TODO)"),
+                icon: const Icon(Icons.assignment_ind),
+                label: const Text("Postulaciones (TODO)"),
                 onPressed: () {
                   ScaffoldMessenger.of(context).showSnackBar(
                     const SnackBar(
-                      content: Text("📝 TODO: Pantalla de gestión de usuarios"),
+                      content: Text("📝 TODO: Panel de postulaciones"),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 12),
+
+            // FUTURO: Certificados / Horas
+            SizedBox(
+              width: double.infinity,
+              child: OutlinedButton.icon(
+                icon: const Icon(Icons.workspace_premium),
+                label: const Text("Certificados / Horas (TODO)"),
+                onPressed: () {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content:
+                          Text("📝 TODO: Auditoría de certificados y horas"),
                     ),
                   );
                 },
@@ -84,7 +128,7 @@ class AdminHomeScreen extends StatelessWidget {
             const Spacer(),
 
             const Text(
-              "📝 TODO: Agregar más módulos al panel admin (reportes, auditoría, etc.).",
+              "📝 TODO: Agregar reportes (usuarios activos, horas totales, etc.).",
               style: TextStyle(color: Colors.grey, fontSize: 12),
             )
           ],
