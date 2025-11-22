@@ -5,61 +5,84 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class CertificadoService {
   final String baseUrl =
-      'https://app-251117192144.azurewebsites.net/api/certificados';
+      'https://app-251121223250.azurewebsites.net/api/certificados';
 
-  // Token público para obtenerlo desde otros servicios o headers
-  Future<String?> getToken() async {
+  Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token');
   }
 
-  // Token privado para guardar internamente
-  Future<void> _saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', token);
-  }
-
-  // --- GENERAR CERTIFICADO ---
+  // -------------------------------------------------------
+  // POST /api/certificados/generar  (Empresa o Admin)
+  // -------------------------------------------------------
   Future<CertificadoDto?> generarCertificado(CertificadoDto dto) async {
-    final token = await getToken();
+    final token = await _getToken();
     if (token == null) return null;
 
     final response = await http.post(
       Uri.parse('$baseUrl/generar'),
       headers: {
-        'Content-Type': 'application/json',
         'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
       },
       body: jsonEncode(dto.toJson()),
     );
 
-    if (response.statusCode == 200) {
+    if (response.statusCode == 200 || response.statusCode == 201) {
       return CertificadoDto.fromJson(jsonDecode(response.body));
     } else {
-      print(
-        'Error al generar certificado: ${response.statusCode} ${response.body}',
-      );
+      print('Error generarCertificado: ${response.statusCode} - ${response.body}');
       return null;
     }
   }
 
-  // --- OBTENER TODOS LOS CERTIFICADOS ---
+  // -------------------------------------------------------
+  // GET /api/certificados   (lista todos - Admin)
+  // -------------------------------------------------------
   Future<List<CertificadoDto>> getCertificados() async {
-    final token = await getToken();
+    final token = await _getToken();
     if (token == null) return [];
 
     final response = await http.get(
       Uri.parse(baseUrl),
-      headers: {'Authorization': 'Bearer $token'},
+      headers: {
+        'Authorization': 'Bearer $token',
+      },
     );
 
     if (response.statusCode == 200) {
       final List data = jsonDecode(response.body);
-      return data.map((json) => CertificadoDto.fromJson(json)).toList();
+      return data.map((e) => CertificadoDto.fromJson(e)).toList();
+    } else {
+      print("Error getCertificados: ${response.statusCode} - ${response.body}");
+      return [];
+    }
+  }
+
+  // -------------------------------------------------------
+  // NUEVO: GET /api/certificados/usuario/{id}
+  // -------------------------------------------------------
+  Future<List<CertificadoDto>> getCertificadosByUsuario(int usuarioId) async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final response = await http.get(
+      Uri.parse('$baseUrl/usuario/$usuarioId'),
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => CertificadoDto.fromJson(e)).toList();
+    } else if (response.statusCode == 404) {
+      // El backend devuelve NotFound si no hay certificados para ese usuario
+      return [];
     } else {
       print(
-        'Error al obtener certificados: ${response.statusCode} ${response.body}',
-      );
+          "Error getCertificadosByUsuario: ${response.statusCode} - ${response.body}");
       return [];
     }
   }

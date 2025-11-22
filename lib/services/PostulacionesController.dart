@@ -1,83 +1,118 @@
 import 'dart:convert';
+import 'package:conectaflutter/DTO/Core/PostulacionDto.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class PostulacionService {
-  final String baseUrl =
-      'https://app-251117192144.azurewebsites.net/api/postulaciones';
+  final String _baseUrl = 'https://app-251121223250.azurewebsites.net/api';
 
-  // Token público para usar en headers
-  Future<String?> getToken() async {
+  Future<String?> _getToken() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getString('token');
   }
 
-  // Token privado para guardar internamente (opcional)
-  Future<void> _saveToken(String token) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('token', token);
-  }
-
-  // --- POSTULAR A UNA ACTIVIDAD ---
-  Future<bool> postular(int actividadId) async {
-    final token = await getToken();
+  // -------------------------------------------------------
+  // POST /api/actividades/{id}/postular
+  // (Solo Voluntario, userId sale del token en el backend)
+  // -------------------------------------------------------
+  Future<bool> postularAActividad(int actividadId) async {
+    final token = await _getToken();
     if (token == null) return false;
+
+    final uri = Uri.parse('$_baseUrl/actividades/$actividadId/postular');
 
     final response = await http.post(
-      Uri.parse(
-        'https://app-251117192144.azurewebsites.net/api/actividades/$actividadId/postular',
-      ),
+      uri,
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
     );
 
-    return response.statusCode == 200;
+    if (response.statusCode == 200) {
+      // backend devuelve un mensaje tipo "Postulación realizada con éxito."
+      return true;
+    } else {
+      print(
+          'Error postularAActividad: ${response.statusCode} - ${response.body}');
+      return false;
+    }
   }
 
-  // --- APROBAR POSTULACION ---
+  // -------------------------------------------------------
+  // PUT /api/postulaciones/{id}/aprobar
+  // (Empresa, Admin)
+  // -------------------------------------------------------
   Future<bool> aprobarPostulacion(int postulacionId) async {
-    final token = await getToken();
+    final token = await _getToken();
     if (token == null) return false;
 
+    final uri =
+        Uri.parse('$_baseUrl/postulaciones/$postulacionId/aprobar');
+
     final response = await http.put(
-      Uri.parse('$baseUrl/$postulacionId/aprobar'),
+      uri,
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
+      // No body, el backend no lo usa
     );
 
-    return response.statusCode == 200;
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print(
+          'Error aprobarPostulacion: ${response.statusCode} - ${response.body}');
+      return false;
+    }
   }
 
-  // --- RECHAZAR POSTULACION ---
+  // -------------------------------------------------------
+  // PUT /api/postulaciones/{id}/rechazar
+  // (Empresa, Admin)
+  // -------------------------------------------------------
   Future<bool> rechazarPostulacion(int postulacionId) async {
-    final token = await getToken();
+    final token = await _getToken();
     if (token == null) return false;
 
+    final uri =
+        Uri.parse('$_baseUrl/postulaciones/$postulacionId/rechazar');
+
     final response = await http.put(
-      Uri.parse('$baseUrl/$postulacionId/rechazar'),
+      uri,
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
       },
     );
 
-    return response.statusCode == 200;
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print(
+          'Error rechazarPostulacion: ${response.statusCode} - ${response.body}');
+      return false;
+    }
   }
 
-  // --- FINALIZAR POSTULACION ---
+  // -------------------------------------------------------
+  // PUT /api/postulaciones/{id}/finalizar
+  // Body: int horasCompletadas (JSON)
+  // (Empresa, Admin)
+  // -------------------------------------------------------
   Future<bool> finalizarPostulacion(
-    int postulacionId,
-    int horasCompletadas,
-  ) async {
-    final token = await getToken();
+      int postulacionId, int horasCompletadas) async {
+    final token = await _getToken();
     if (token == null) return false;
 
+    final uri =
+        Uri.parse('$_baseUrl/postulaciones/$postulacionId/finalizar');
+
+    // OJO: el backend espera [FromBody] int horasCompletadas,
+    // así que mandamos el int directo como JSON, no como objeto.
     final response = await http.put(
-      Uri.parse('$baseUrl/$postulacionId/finalizar'),
+      uri,
       headers: {
         'Authorization': 'Bearer $token',
         'Content-Type': 'application/json',
@@ -85,6 +120,39 @@ class PostulacionService {
       body: jsonEncode(horasCompletadas),
     );
 
-    return response.statusCode == 200;
+    if (response.statusCode == 200) {
+      return true;
+    } else {
+      print(
+          'Error finalizarPostulacion: ${response.statusCode} - ${response.body}');
+      return false;
+    }
+  }
+
+  // -------------------------------------------------------
+  // GET /api/postulaciones   (Solo Admin)
+  // -------------------------------------------------------
+  Future<List<PostulacionDto>> getAllPostulaciones() async {
+    final token = await _getToken();
+    if (token == null) return [];
+
+    final uri = Uri.parse('$_baseUrl/postulaciones');
+
+    final response = await http.get(
+      uri,
+      headers: {
+        'Authorization': 'Bearer $token',
+        'Content-Type': 'application/json',
+      },
+    );
+
+    if (response.statusCode == 200) {
+      final List data = jsonDecode(response.body);
+      return data.map((e) => PostulacionDto.fromJson(e)).toList();
+    } else {
+      print(
+          'Error getAllPostulaciones: ${response.statusCode} - ${response.body}');
+      return [];
+    }
   }
 }

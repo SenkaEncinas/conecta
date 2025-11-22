@@ -6,7 +6,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class UsuarioService {
   final String baseUrl =
-      'https://app-251117192144.azurewebsites.net/api/usuarios';
+      'https://app-251121223250.azurewebsites.net/api/usuarios';
 
   // Token público para headers
   Future<String?> getToken() async {
@@ -15,7 +15,7 @@ class UsuarioService {
   }
 
   // Token privado para guardar internamente (opcional)
-  Future<void> _saveToken(String token) async {
+  Future<void> saveToken(String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('token', token);
   }
