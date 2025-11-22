@@ -353,25 +353,57 @@ class _PostulacionesActividadScreenState
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    // 👇 SOLO cambié este bloque, lo demás está igual
                     subtitle: Padding(
-                      padding: const EdgeInsets.only(top: 4),
+                      padding: const EdgeInsets.only(top: 6),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text("Actividad: ${p.nombreActividad}"),
-                          Text("Estado: $estado"),
+                          Text(
+                            "Actividad: ${p.nombreActividad}",
+                            style: const TextStyle(fontSize: 13),
+                          ),
+                          Text(
+                            "Estado: $estado",
+                            style: TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: _colorForEstado(estado, context),
+                            ),
+                          ),
                           Text(
                             "Fecha postulación: ${_formatFecha(p.fechaPostulacion)}",
+                            style: const TextStyle(fontSize: 12),
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            "Horas asignadas: ${p.horasAsignadas} | Completadas: ${p.horasCompletadas}",
+                            "Horas: ${p.horasCompletadas}/${p.horasAsignadas}",
                             style: const TextStyle(fontSize: 12),
                           ),
                           const SizedBox(height: 4),
                           LinearProgressIndicator(
                             value: progreso.isNaN ? 0.0 : progreso,
                             minHeight: 5,
+                          ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              Text(
+                                "ID postulación: ${p.id}",
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                "ID usuario: ${p.usuarioId}",
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),

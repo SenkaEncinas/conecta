@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:conectaflutter/Services/ActividadService.dart';
 import 'package:conectaflutter/DTO/Core/ActividadDto.dart';
+import 'package:conectaflutter/DTO/Entities/UpdateActividadDto.dart';
 
 class ActividadesAdminScreen extends StatefulWidget {
   const ActividadesAdminScreen({super.key});
@@ -26,7 +27,6 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
   }
 
   Future<void> _eliminarActividad(ActividadDto actividad) async {
-    // id es int (no nullable) en ActividadDto
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
@@ -67,6 +67,149 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
           content: Text("No se pudo eliminar la actividad."),
         ),
       );
+    }
+  }
+
+  Future<void> _editarActividad(ActividadDto actividad) async {
+    final parentContext = context;
+
+    final nombreController =
+        TextEditingController(text: actividad.nombreActividad);
+    final descripcionController =
+        TextEditingController(text: actividad.descripcion ?? '');
+    final cuposController =
+        TextEditingController(text: actividad.cupos.toString());
+
+    // estado en DTO es bool, pero en ActividadDto es String
+    final estadoLower = actividad.estado.toLowerCase();
+    bool estadoActiva =
+        estadoLower == "disponible" || estadoLower == "activa";
+
+    final result = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text("Editar actividad"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nombreController,
+                  decoration: const InputDecoration(
+                    labelText: "Nombre actividad",
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: descripcionController,
+                  maxLines: 3,
+                  decoration: const InputDecoration(
+                    labelText: "Descripción",
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: cuposController,
+                  keyboardType: TextInputType.number,
+                  decoration: const InputDecoration(
+                    labelText: "Cupos",
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Text("Activa"),
+                    const Spacer(),
+                    Switch(
+                      value: estadoActiva,
+                      onChanged: (val) {
+                        estadoActiva = val;
+                        // necesario para que se actualice el switch
+                        (dialogContext as Element).markNeedsBuild();
+                      },
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  "Estado actual: ${actividad.estado}",
+                  style: const TextStyle(fontSize: 12, color: Colors.grey),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: const Text("Cancelar"),
+            ),
+            TextButton(
+              onPressed: () async {
+                final nombre = nombreController.text.trim();
+                final cuposStr = cuposController.text.trim();
+
+                if (nombre.isEmpty) {
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                    const SnackBar(
+                      content: Text("El nombre no puede estar vacío."),
+                    ),
+                  );
+                  return;
+                }
+
+                final cupos = int.tryParse(cuposStr);
+                if (cupos == null || cupos < 0) {
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                    const SnackBar(
+                      content: Text("Cupos inválidos."),
+                    ),
+                  );
+                  return;
+                }
+
+                final dto = UpdateActividadDto(
+                  nombreActividad: nombre,
+                  descripcion: descripcionController.text.trim().isEmpty
+                      ? null
+                      : descripcionController.text.trim(),
+                  // Por ahora NO cambiamos fechas desde el admin:
+                  fechaInicio: actividad.fechaInicio,
+                  fechaFin: actividad.fechaFin,
+                  cupos: cupos,
+                  estado: estadoActiva,
+                );
+
+                final ok = await _actividadService.updateActividad(
+                  actividad.id,
+                  dto,
+                );
+
+                if (ok) {
+                  if (!mounted) return;
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                    const SnackBar(
+                      content: Text("Actividad actualizada correctamente."),
+                    ),
+                  );
+                  Navigator.pop(dialogContext, true);
+                } else {
+                  ScaffoldMessenger.of(parentContext).showSnackBar(
+                    const SnackBar(
+                      content: Text("No se pudo actualizar la actividad."),
+                    ),
+                  );
+                }
+              },
+              child: const Text("Guardar"),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == true) {
+      _refresh();
     }
   }
 
@@ -117,7 +260,6 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
               itemBuilder: (context, index) {
                 final a = actividades[index];
 
-                // El estado viene como String (ej: "Disponible")
                 final estadoTexto = a.estado;
                 final estadoLower = estadoTexto.toLowerCase();
                 final esActiva =
@@ -131,16 +273,12 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
                     subtitle: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Empresa dueña de la actividad
                         Text("Empresa: ${a.nombreEmpresa}"),
-                        // Rango de fechas
                         Text(
                           "Del ${_formatFecha(a.fechaInicio)} "
                           "al ${_formatFecha(a.fechaFin)}",
                         ),
-                        // Cupos
                         Text("Cupos: ${a.cupos}"),
-                        // Estado (String) pero coloreado según valor
                         Text(
                           "Estado: $estadoTexto",
                           style: TextStyle(
@@ -148,7 +286,6 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
                             fontWeight: FontWeight.w600,
                           ),
                         ),
-                        // Descripción opcional
                         if (a.descripcion != null &&
                             a.descripcion!.isNotEmpty)
                           Text(
@@ -161,7 +298,10 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
                     trailing: Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        // TODO a futuro: botón editar (usa UpdateActividadDto)
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () => _editarActividad(a),
+                        ),
                         IconButton(
                           icon: const Icon(Icons.delete, color: Colors.red),
                           onPressed: () => _eliminarActividad(a),
