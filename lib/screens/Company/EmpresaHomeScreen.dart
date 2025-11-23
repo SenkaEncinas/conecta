@@ -38,71 +38,66 @@ class _EmpresaHomeScreenState extends State<EmpresaHomeScreen> {
     );
   }
 
-  // NUEVO: Avatar que usa logoURL real
   Widget _buildLogoAvatar() {
     final logo = _empresa.logoURL;
     final hasLogo = logo != null && logo.trim().isNotEmpty;
 
-    print("DEBUG logoURL recibido en Home = $logo");
-
     if (!hasLogo) {
       return const CircleAvatar(
-        radius: 26,
-        child: Icon(Icons.business),
+        radius: 30,
+        backgroundColor: Color(0xFF6A1B9A),
+        child: Icon(Icons.business, color: Colors.white, size: 30),
       );
     }
 
-    return ClipOval(
-      child: SizedBox(
-        width: 52,
-        height: 52,
-        child: Image.network(
-          logo!,
-          fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) {
-            print("❌ ERROR al cargar el logo: $error");
-            return const CircleAvatar(
-              radius: 26,
-              child: Icon(Icons.error),
-            );
-          },
-        ),
-      ),
+    return CircleAvatar(
+      radius: 30,
+      backgroundColor: Colors.grey.shade200,
+      backgroundImage: NetworkImage(logo!),
+      onBackgroundImageError: (_, __) {
+        print("❌ Error cargando logo de empresa");
+      },
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final nombre = _empresa.nombre.isNotEmpty ? _empresa.nombre : "Empresa";
+    final primaryColor = Colors.deepPurple.shade600;
+    final secondaryColor = Colors.deepPurple.shade100;
+    final String nombre = _empresa.nombre.isNotEmpty
+        ? _empresa.nombre
+        : "Empresa";
 
     return Scaffold(
+      backgroundColor: secondaryColor,
       appBar: AppBar(
         title: const Text("Inicio Empresa"),
+        backgroundColor: primaryColor,
         centerTitle: true,
         actions: [
           IconButton(
             icon: const Icon(Icons.account_circle),
-            tooltip: "Perfil",
             onPressed: _abrirPerfil,
-          )
+          ),
         ],
       ),
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // --- CARD CON DATOS DE LA EMPRESA ---
+            // Tarjeta de datos de la empresa
             Card(
-              elevation: 2,
+              color: Colors.white,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
               ),
+              elevation: 4,
               child: Padding(
                 padding: const EdgeInsets.all(16),
                 child: Row(
                   children: [
-                    _buildLogoAvatar(), // aquí se muestra el logo real
+                    _buildLogoAvatar(),
                     const SizedBox(width: 16),
                     Expanded(
                       child: Column(
@@ -110,8 +105,11 @@ class _EmpresaHomeScreenState extends State<EmpresaHomeScreen> {
                         children: [
                           Text(
                             nombre,
-                            style: const TextStyle(
-                                fontSize: 20, fontWeight: FontWeight.bold),
+                            style: TextStyle(
+                              fontSize: 22,
+                              fontWeight: FontWeight.bold,
+                              color: primaryColor,
+                            ),
                           ),
                           const SizedBox(height: 4),
                           Text(
@@ -120,7 +118,10 @@ class _EmpresaHomeScreenState extends State<EmpresaHomeScreen> {
                           ),
                           if ((_empresa.descripcion ?? "").isNotEmpty) ...[
                             const SizedBox(height: 6),
-                            Text(_empresa.descripcion ?? ""),
+                            Text(
+                              _empresa.descripcion ?? "",
+                              style: const TextStyle(fontSize: 14),
+                            ),
                           ],
                           if ((_empresa.direccion ?? "").isNotEmpty) ...[
                             const SizedBox(height: 8),
@@ -129,105 +130,138 @@ class _EmpresaHomeScreenState extends State<EmpresaHomeScreen> {
                                 const Icon(Icons.location_on, size: 16),
                                 const SizedBox(width: 6),
                                 Expanded(
-                                  child: Text(_empresa.direccion ?? ""),
+                                  child: Text(
+                                    _empresa.direccion ?? "",
+                                    style: const TextStyle(fontSize: 14),
+                                  ),
                                 ),
                               ],
                             ),
                           ],
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton.icon(
-                              icon: const Icon(Icons.edit, size: 18),
-                              label: const Text("Editar"),
-                              onPressed: _abrirPerfil,
-                            ),
-                          )
                         ],
                       ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.edit, color: primaryColor),
+                      onPressed: _abrirPerfil,
                     ),
                   ],
                 ),
               ),
             ),
 
-            // DEBUG VISUAL: Ver URL en pantalla
-            const SizedBox(height: 8),
-            Text(
-              'logoURL: ${_empresa.logoURL}',
-              style: const TextStyle(fontSize: 12, color: Colors.grey),
-            ),
-            const SizedBox(height: 16),
-
+            const SizedBox(height: 24),
             Text(
               "Hola, $nombre 👋",
-              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: primaryColor,
+              ),
             ),
             const SizedBox(height: 6),
             const Text(
               "Gestioná tus actividades y postulaciones.",
               style: TextStyle(fontSize: 16, color: Colors.grey),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 24),
 
-            // Crear actividad
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton.icon(
-                icon: const Icon(Icons.add),
-                label: const Text("Crear actividad"),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          CrearActividadScreen(empresaId: _empresa.id),
-                    ),
-                  );
-                },
-              ),
+            // Botón Crear Actividad
+            _buildButton(
+              icon: Icons.add,
+              label: "Crear actividad",
+              color: primaryColor,
+              textColor: Colors.white,
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        CrearActividadScreen(empresaId: _empresa.id),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
 
-            // Mis actividades
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.list_alt),
-                label: const Text("Mis actividades"),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          MisActividadesEmpresaScreen(empresaId: _empresa.id),
-                    ),
-                  );
-                },
-              ),
+            // Botón Mis Actividades
+            _buildButton(
+              icon: Icons.list_alt,
+              label: "Mis actividades",
+              color: Colors.white,
+              textColor: primaryColor,
+              border: BorderSide(color: primaryColor),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        MisActividadesEmpresaScreen(empresaId: _empresa.id),
+                  ),
+                );
+              },
             ),
             const SizedBox(height: 12),
 
-            // Postulaciones
-            SizedBox(
-              width: double.infinity,
-              child: OutlinedButton.icon(
-                icon: const Icon(Icons.people),
-                label: const Text("Postulaciones"),
-                onPressed: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (_) => PostulacionesActividadScreen(
-                        actividadId: _empresa.id,
-                      ),
-                    ),
-                  );
-                },
-              ),
+            // Botón Postulaciones
+            _buildButton(
+              icon: Icons.people,
+              label: "Postulaciones",
+              color: Colors.white,
+              textColor: primaryColor,
+              border: BorderSide(color: primaryColor),
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        PostulacionesActividadScreen(actividadId: _empresa.id),
+                  ),
+                );
+              },
             ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _buildButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required Color textColor,
+    BorderSide? border,
+    required VoidCallback onTap,
+  }) {
+    final bool outlined = border != null;
+    return SizedBox(
+      width: double.infinity,
+      child: outlined
+          ? OutlinedButton.icon(
+              icon: Icon(icon, color: textColor),
+              label: Text(label, style: TextStyle(color: textColor)),
+              style: OutlinedButton.styleFrom(
+                side: border,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: onTap,
+            )
+          : ElevatedButton.icon(
+              icon: Icon(icon, color: textColor),
+              label: Text(label, style: TextStyle(color: textColor)),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: color,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              onPressed: onTap,
+            ),
     );
   }
 }

@@ -4,11 +4,7 @@ import 'package:conectaflutter/Services/ActividadService.dart';
 
 class CrearActividadScreen extends StatefulWidget {
   final int? empresaId;
-
-  const CrearActividadScreen({
-    super.key,
-    required this.empresaId,
-  });
+  const CrearActividadScreen({super.key, required this.empresaId});
 
   @override
   State<CrearActividadScreen> createState() => _CrearActividadScreenState();
@@ -16,18 +12,13 @@ class CrearActividadScreen extends StatefulWidget {
 
 class _CrearActividadScreenState extends State<CrearActividadScreen> {
   final _formKey = GlobalKey<FormState>();
-
   final TextEditingController _nombreActividadController =
       TextEditingController();
-  final TextEditingController _descripcionController =
-      TextEditingController();
+  final TextEditingController _descripcionController = TextEditingController();
   final TextEditingController _cuposController = TextEditingController();
-
   DateTime? _fechaInicio;
   DateTime? _fechaFin;
-
   bool _loading = false;
-
   final ActividadService _actividadService = ActividadService();
 
   @override
@@ -100,7 +91,8 @@ class _CrearActividadScreenState extends State<CrearActividadScreen> {
     if (_fechaFin!.isBefore(_fechaInicio!)) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-            content: Text("La fecha fin no puede ser antes que la de inicio")),
+          content: Text("La fecha fin no puede ser antes que la de inicio"),
+        ),
       );
       return;
     }
@@ -116,11 +108,10 @@ class _CrearActividadScreenState extends State<CrearActividadScreen> {
     setState(() => _loading = true);
 
     try {
-      // Usamos EXACTAMENTE tu ActividadDto
       final actividad = ActividadDto(
-        id: 0, // el backend luego devolverá el id real
+        id: 0,
         empresaId: widget.empresaId!,
-        nombreEmpresa: "", // el backend puede rellenar esto
+        nombreEmpresa: "",
         nombreActividad: _nombreActividadController.text.trim(),
         descripcion: _descripcionController.text.trim().isEmpty
             ? null
@@ -141,32 +132,36 @@ class _CrearActividadScreenState extends State<CrearActividadScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text("Actividad creada exitosamente")),
         );
-        // devolvemos true para que la pantalla anterior sepa que refresque
         Navigator.pop(context, true);
       } else {
         if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content:
-                  Text("No se pudo crear la actividad. Revisa el servidor.")),
+            content: Text("No se pudo crear la actividad. Revisa el servidor."),
+          ),
         );
       }
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error al crear actividad: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error al crear actividad: $e")));
     } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      if (mounted) setState(() => _loading = false);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Colors.deepPurple.shade600;
+    final secondaryColor = Colors.deepPurple.shade50;
+
     return Scaffold(
-      appBar: AppBar(title: const Text("Crear Actividad")),
+      backgroundColor: secondaryColor,
+      appBar: AppBar(
+        title: const Text("Crear Actividad"),
+        backgroundColor: primaryColor,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16),
         child: Form(
@@ -175,95 +170,123 @@ class _CrearActividadScreenState extends State<CrearActividadScreen> {
             children: [
               Text(
                 "Empresa ID: ${widget.empresaId ?? 'sin id'}",
-                style: const TextStyle(
+                style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.bold,
+                  color: primaryColor,
                 ),
               ),
               const SizedBox(height: 16),
 
-              TextFormField(
+              _buildTextField(
                 controller: _nombreActividadController,
-                decoration: const InputDecoration(
-                  labelText: "Nombre de la actividad",
-                  border: OutlineInputBorder(),
-                ),
-                validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
-                    return "Ingresa el nombre de la actividad";
-                  }
-                  return null;
-                },
+                label: "Nombre de la actividad",
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? "Ingresa el nombre"
+                    : null,
               ),
               const SizedBox(height: 16),
 
-              TextFormField(
+              _buildTextField(
                 controller: _descripcionController,
-                decoration: const InputDecoration(
-                  labelText: "Descripción (opcional)",
-                  border: OutlineInputBorder(),
-                ),
+                label: "Descripción (opcional)",
                 maxLines: 3,
               ),
               const SizedBox(height: 16),
 
-              TextFormField(
+              _buildTextField(
                 controller: _cuposController,
-                decoration: const InputDecoration(
-                  labelText: "Cupos",
-                  border: OutlineInputBorder(),
-                ),
+                label: "Cupos",
                 keyboardType: TextInputType.number,
                 validator: (v) {
-                  if (v == null || v.trim().isEmpty) {
+                  if (v == null || v.trim().isEmpty)
                     return "Ingresa la cantidad de cupos";
-                  }
-                  if (int.tryParse(v) == null) {
-                    return "Debe ser un número";
-                  }
+                  if (int.tryParse(v) == null) return "Debe ser un número";
                   return null;
                 },
               ),
               const SizedBox(height: 16),
 
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  _fechaInicio == null
-                      ? "Seleccionar fecha de inicio"
-                      : "Fecha inicio: ${_formatFecha(_fechaInicio!)}",
-                ),
-                trailing: const Icon(Icons.calendar_month),
+              _buildDateSelector(
+                label: _fechaInicio == null
+                    ? "Seleccionar fecha de inicio"
+                    : "Fecha inicio: ${_formatFecha(_fechaInicio!)}",
                 onTap: _seleccionarFechaInicio,
+                primaryColor: primaryColor,
               ),
               const SizedBox(height: 8),
-
-              ListTile(
-                contentPadding: EdgeInsets.zero,
-                title: Text(
-                  _fechaFin == null
-                      ? "Seleccionar fecha de fin"
-                      : "Fecha fin: ${_formatFecha(_fechaFin!)}",
-                ),
-                trailing: const Icon(Icons.calendar_today),
+              _buildDateSelector(
+                label: _fechaFin == null
+                    ? "Seleccionar fecha de fin"
+                    : "Fecha fin: ${_formatFecha(_fechaFin!)}",
                 onTap: _seleccionarFechaFin,
+                primaryColor: primaryColor,
               ),
               const SizedBox(height: 24),
 
               ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
                 onPressed: _loading ? null : _crearActividad,
                 child: _loading
                     ? const SizedBox(
                         height: 20,
                         width: 20,
-                        child: CircularProgressIndicator(strokeWidth: 2),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
                       )
-                    : const Text("Crear actividad"),
+                    : const Text(
+                        "Crear actividad",
+                        style: TextStyle(fontSize: 16),
+                      ),
               ),
             ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    int maxLines = 1,
+    TextInputType keyboardType = TextInputType.text,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      maxLines: maxLines,
+      keyboardType: keyboardType,
+      validator: validator,
+      decoration: InputDecoration(
+        labelText: label,
+        filled: true,
+        fillColor: Colors.white,
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+  }
+
+  Widget _buildDateSelector({
+    required String label,
+    required VoidCallback onTap,
+    required Color primaryColor,
+  }) {
+    return ListTile(
+      contentPadding: EdgeInsets.zero,
+      tileColor: Colors.white,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      title: Text(label),
+      trailing: Icon(Icons.calendar_month, color: primaryColor),
+      onTap: onTap,
     );
   }
 }

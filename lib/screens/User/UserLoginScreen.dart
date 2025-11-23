@@ -5,6 +5,7 @@ import 'package:conectaflutter/DTO/Auth/LoginDto.dart';
 import 'package:conectaflutter/DTO/Core/UsuarioDto.dart';
 import 'package:conectaflutter/DTO/Core/EmpresaDto.dart';
 import 'package:conectaflutter/screens/User/VoluntarioHomeScreen.dart';
+import 'package:conectaflutter/screens/User/UserRegisterScreen.dart';
 
 class UserLoginScreen extends StatefulWidget {
   const UserLoginScreen({super.key});
@@ -40,9 +41,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
 
       if (!mounted) return;
 
-      // ---------------------------
-      //   USUARIO (Admin o Voluntario)
-      // ---------------------------
       if (result is UsuarioDto) {
         final tipo = result.tipoUsuario?.toLowerCase();
 
@@ -50,12 +48,9 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Bienvenido Administrador")),
           );
-
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(
-              builder: (_) => AdminHomeScreen(admin: result),
-            ),
+            MaterialPageRoute(builder: (_) => AdminHomeScreen(admin: result)),
           );
           return;
         }
@@ -64,7 +59,6 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Login voluntario exitoso")),
           );
-
           Navigator.pushReplacement(
             context,
             MaterialPageRoute(
@@ -78,26 +72,27 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
         return;
       }
 
-      // ---------------------------
-      //   EMPRESA
-      // ---------------------------
       if (result is EmpresaDto) {
         setState(() {
           _errorMessage =
-              "Esta cuenta corresponde a una empresa. Usá el login de empresa.";
+              "Esta cuenta pertenece a una empresa. Usá el login de empresa.";
         });
         return;
       }
 
-      setState(() {
-        _errorMessage = "Credenciales incorrectas o error en servidor.";
-      });
+      setState(() => _errorMessage = "Correo o contraseña incorrectos.");
     } catch (e) {
       setState(() {
-        _errorMessage = "Error inesperado: $e";
+        if (e.toString().contains("SocketException")) {
+          _errorMessage = "No hay conexión a internet.";
+        } else if (e.toString().contains("500")) {
+          _errorMessage = "Servidor no disponible. Intente más tarde.";
+        } else {
+          _errorMessage = "Error inesperado: $e";
+        }
       });
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
   }
 
@@ -110,86 +105,224 @@ class _UserLoginScreenState extends State<UserLoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primary = const Color(0xFF1A73E8);
+
     return Scaffold(
-      appBar: AppBar(
-        title: const Text("Login Usuario / Admin"),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            children: [
-              const SizedBox(height: 30),
-
-              TextFormField(
-                controller: _emailController,
-                decoration: const InputDecoration(
-                  labelText: "Correo electrónico",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.email),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Ingresá tu correo";
-                  }
-                  if (!value.contains("@")) {
-                    return "Correo inválido";
-                  }
-                  return null;
-                },
+      body: Stack(
+        children: [
+          // 🎨 Fondo degradado elegante
+          Container(
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Color(0xFFE6EDF6),
+                  Color(0xFFDDE7F5),
+                  Color(0xFFC7D7EE),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-
-              const SizedBox(height: 16),
-
-              TextFormField(
-                controller: _passwordController,
-                obscureText: true,
-                decoration: const InputDecoration(
-                  labelText: "Contraseña",
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.lock),
-                ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return "Ingresá tu contraseña";
-                  }
-                  if (value.length < 4) {
-                    return "Contraseña muy corta";
-                  }
-                  return null;
-                },
-              ),
-
-              const SizedBox(height: 24),
-
-              if (_errorMessage != null) ...[
-                Text(
-                  _errorMessage!,
-                  style: const TextStyle(color: Colors.red),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: 12),
-              ],
-
-              SizedBox(
-                width: double.infinity,
-                height: 48,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _login,
-                  child: _isLoading
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text("Ingresar"),
-                ),
-              ),
-            ],
+            ),
           ),
-        ),
+
+          // 🔙 BOTÓN VOLVER
+          Positioned(
+            top: 40,
+            left: 20,
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Row(
+                children: const [
+                  Icon(Icons.arrow_back, color: Colors.black87),
+                  SizedBox(width: 6),
+                  Text(
+                    "Volver",
+                    style: TextStyle(
+                      fontSize: 17,
+                      color: Colors.black87,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          Center(
+            child: SingleChildScrollView(
+              child: Container(
+                width: 480,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 35,
+                  vertical: 45,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.08),
+                      blurRadius: 15,
+                      offset: const Offset(0, 6),
+                    ),
+                  ],
+                ),
+
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      Icon(Icons.person_pin_circle, size: 90, color: primary),
+                      const SizedBox(height: 18),
+
+                      const Text(
+                        "Ingreso de Usuario / Admin",
+                        style: TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF2F3B52),
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+
+                      const SizedBox(height: 30),
+
+                      // EMAIL INPUT
+                      TextFormField(
+                        controller: _emailController,
+                        decoration: InputDecoration(
+                          labelText: "Correo electrónico",
+                          filled: true,
+                          fillColor: const Color(0xFFF5F7FA),
+                          prefixIcon: Icon(
+                            Icons.email_outlined,
+                            color: primary,
+                          ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Ingresá tu correo";
+                          }
+                          if (!value.contains("@")) {
+                            return "Correo inválido";
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 16),
+
+                      // PASSWORD INPUT
+                      TextFormField(
+                        controller: _passwordController,
+                        obscureText: true,
+                        decoration: InputDecoration(
+                          labelText: "Contraseña",
+                          filled: true,
+                          fillColor: const Color(0xFFF5F7FA),
+                          prefixIcon: Icon(Icons.lock_outline, color: primary),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(14),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                        validator: (value) {
+                          if (value == null || value.isEmpty) {
+                            return "Ingresá tu contraseña";
+                          }
+                          if (value.length < 4) {
+                            return "Contraseña muy corta";
+                          }
+                          return null;
+                        },
+                      ),
+
+                      const SizedBox(height: 22),
+
+                      // ERROR
+                      if (_errorMessage != null)
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: Text(
+                            _errorMessage!,
+                            style: const TextStyle(
+                              color: Colors.red,
+                              fontWeight: FontWeight.w600,
+                            ),
+                            textAlign: TextAlign.center,
+                          ),
+                        ),
+
+                      // BOTÓN LOGIN
+                      SizedBox(
+                        width: double.infinity,
+                        height: 50,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _login,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primary,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                          ),
+                          child: _isLoading
+                              ? const CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                )
+                              : const Text(
+                                  "Ingresar",
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 25),
+
+                      // 🧾 ¿NO TENÉS CUENTA?
+                      GestureDetector(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => const UserRegisterScreen(),
+                            ),
+                          );
+                        },
+                        child: RichText(
+                          text: const TextSpan(
+                            text: "¿No tenés cuenta? ",
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontSize: 15,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: "Registrate",
+                                style: TextStyle(
+                                  color: Color(0xFF1A73E8),
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

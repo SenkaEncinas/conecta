@@ -14,6 +14,9 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
   final EmpresaService _empresaService = EmpresaService();
   late Future<List<EmpresaDto>> _futureEmpresas;
 
+  final Color primaryColor = Colors.blue;
+  final Color secondaryColor = Colors.blue.shade50;
+
   @override
   void initState() {
     super.initState();
@@ -41,10 +44,7 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              "Eliminar",
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text("Eliminar", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -56,18 +56,16 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
 
     if (!mounted) return;
 
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Empresa eliminada correctamente.")),
-      );
-      _refresh();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("No se pudo eliminar la empresa."),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? "Empresa eliminada correctamente."
+              : "No se pudo eliminar la empresa.",
         ),
-      );
-    }
+      ),
+    );
+    if (ok) _refresh();
   }
 
   Future<void> _editarEmpresa(EmpresaDto empresa) async {
@@ -75,14 +73,16 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
 
     final parentContext = context;
 
-    final nombreController =
-        TextEditingController(text: empresa.nombre ?? '');
-    final descripcionController =
-        TextEditingController(text: empresa.descripcion ?? '');
-    final direccionController =
-        TextEditingController(text: empresa.direccion ?? '');
-    final logoUrlController =
-        TextEditingController(text: empresa.logoURL ?? '');
+    final nombreController = TextEditingController(text: empresa.nombre ?? '');
+    final descripcionController = TextEditingController(
+      text: empresa.descripcion ?? '',
+    );
+    final direccionController = TextEditingController(
+      text: empresa.direccion ?? '',
+    );
+    final logoUrlController = TextEditingController(
+      text: empresa.logoURL ?? '',
+    );
 
     final result = await showDialog<bool>(
       context: context,
@@ -104,16 +104,12 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
                 TextField(
                   controller: descripcionController,
                   maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: "Descripción",
-                  ),
+                  decoration: const InputDecoration(labelText: "Descripción"),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: direccionController,
-                  decoration: const InputDecoration(
-                    labelText: "Dirección",
-                  ),
+                  decoration: const InputDecoration(labelText: "Dirección"),
                 ),
                 const SizedBox(height: 8),
                 TextField(
@@ -143,16 +139,17 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
                   return;
                 }
 
-                final descripcion = descripcionController.text.trim();
-                final direccion = direccionController.text.trim();
-                final logo = logoUrlController.text.trim();
-
                 final dto = UpdateEmpresaDto(
                   nombre: nombre,
-                  descripcion:
-                      descripcion.isEmpty ? null : descripcion,
-                  direccion: direccion.isEmpty ? null : direccion,
-                  logoURL: logo.isEmpty ? null : logo,
+                  descripcion: descripcionController.text.trim().isEmpty
+                      ? null
+                      : descripcionController.text.trim(),
+                  direccion: direccionController.text.trim().isEmpty
+                      ? null
+                      : direccionController.text.trim(),
+                  logoURL: logoUrlController.text.trim().isEmpty
+                      ? null
+                      : logoUrlController.text.trim(),
                 );
 
                 final ok = await _empresaService.updateEmpresa(
@@ -160,21 +157,19 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
                   dto,
                 );
 
-                if (ok) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(parentContext).showSnackBar(
-                    const SnackBar(
-                      content: Text("Empresa actualizada correctamente."),
+                if (!mounted) return;
+
+                ScaffoldMessenger.of(parentContext).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok
+                          ? "Empresa actualizada correctamente."
+                          : "No se pudo actualizar la empresa.",
                     ),
-                  );
-                  Navigator.pop(dialogContext, true);
-                } else {
-                  ScaffoldMessenger.of(parentContext).showSnackBar(
-                    const SnackBar(
-                      content: Text("No se pudo actualizar la empresa."),
-                    ),
-                  );
-                }
+                  ),
+                );
+
+                if (ok) Navigator.pop(dialogContext, true);
               },
               child: const Text("Guardar"),
             ),
@@ -183,55 +178,55 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
       },
     );
 
-    if (result == true) {
-      _refresh();
-    }
+    if (result == true) _refresh();
   }
 
   Widget _buildLogo(EmpresaDto e) {
-  final url = e.logoURL;
+    final url = e.logoURL;
+    if (url == null || url.isEmpty) {
+      return CircleAvatar(
+        radius: 24,
+        backgroundColor: primaryColor,
+        child: const Icon(Icons.business, color: Colors.white),
+      );
+    }
 
-  // Si no hay URL → ícono default
-  if (url == null || url.isEmpty) {
-    return const CircleAvatar(
-      radius: 22,
-      child: Icon(Icons.business),
+    return CircleAvatar(
+      radius: 24,
+      backgroundColor: Colors.grey.shade200,
+      child: ClipOval(
+        child: Image.network(
+          url,
+          fit: BoxFit.cover,
+          width: 48,
+          height: 48,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return const Center(
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) {
+            return const Icon(Icons.broken_image, size: 28, color: Colors.grey);
+          },
+        ),
+      ),
     );
   }
-
-  return CircleAvatar(
-    radius: 22,
-    backgroundColor: Colors.grey.shade200,
-    child: ClipOval(
-      child: Image.network(
-        url,
-        fit: BoxFit.cover,
-        width: 44,
-        height: 44,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return const Center(
-            child: SizedBox(
-              width: 20,
-              height: 20,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return const Icon(Icons.broken_image, size: 28, color: Colors.grey);
-        },
-      ),
-    ),
-  );
-}
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: secondaryColor,
       appBar: AppBar(
+        backgroundColor: primaryColor,
         title: const Text("Empresas registradas"),
         centerTitle: true,
+        elevation: 4,
       ),
       body: FutureBuilder<List<EmpresaDto>>(
         future: _futureEmpresas,
@@ -241,70 +236,93 @@ class _EmpresasAdminScreenState extends State<EmpresasAdminScreen> {
           }
 
           if (snapshot.hasError) {
-            return Center(
-              child: Text("Error: ${snapshot.error}"),
-            );
+            return Center(child: Text("Error: ${snapshot.error}"));
           }
 
           final empresas = snapshot.data ?? [];
 
-          if (empresas.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: _refresh,
-              child: ListView(
-                children: const [
-                  SizedBox(height: 250),
-                  Center(child: Text("No hay empresas registradas")),
-                ],
-              ),
-            );
-          }
-
           return RefreshIndicator(
             onRefresh: _refresh,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: empresas.length,
-              itemBuilder: (context, index) {
-                final e = empresas[index];
-
-                return Card(
-                  elevation: 2,
-                  child: ListTile(
-                    leading: _buildLogo(e),
-                    title: Text(e.nombre ?? "Sin nombre"),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        if (e.email != null) Text("Email: ${e.email}"),
-                        if (e.direccion != null)
-                          Text("Dirección: ${e.direccion}"),
-                        if (e.descripcion != null &&
-                            e.descripcion!.isNotEmpty)
-                          Text(
-                            e.descripcion!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+            child: empresas.isEmpty
+                ? ListView(
+                    children: const [
+                      SizedBox(height: 250),
+                      Center(child: Text("No hay empresas registradas")),
+                    ],
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: empresas.length,
+                    itemBuilder: (context, index) {
+                      final e = empresas[index];
+                      return Card(
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 16,
                           ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => _editarEmpresa(e),
+                          leading: _buildLogo(e),
+                          title: Text(
+                            e.nombre ?? "Sin nombre",
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (e.email != null)
+                                Text(
+                                  "Email: ${e.email}",
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              if (e.direccion != null)
+                                Text(
+                                  "Dirección: ${e.direccion}",
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              if (e.descripcion != null &&
+                                  e.descripcion!.isNotEmpty)
+                                Text(
+                                  e.descripcion!,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.blue,
+                                ),
+                                onPressed: () => _editarEmpresa(e),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () => _eliminarEmpresa(e),
+                              ),
+                            ],
+                          ),
                         ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _eliminarEmpresa(e),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           );
         },
       ),

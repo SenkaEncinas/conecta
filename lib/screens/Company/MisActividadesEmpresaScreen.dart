@@ -16,6 +16,9 @@ class _MisActividadesEmpresaScreenState
   final ActividadService _actividadService = ActividadService();
   late Future<List<ActividadDto>> _future;
 
+  final primaryColor = Colors.deepPurple.shade600;
+  final secondaryColor = Colors.deepPurple.shade50;
+
   @override
   void initState() {
     super.initState();
@@ -40,9 +43,7 @@ class _MisActividadesEmpresaScreenState
       context: context,
       builder: (context) => AlertDialog(
         title: const Text("Eliminar actividad"),
-        content: Text(
-          "¿Seguro que querés eliminar '${a.nombreActividad}'?",
-        ),
+        content: Text("¿Seguro que querés eliminar '${a.nombreActividad}'?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -50,10 +51,7 @@ class _MisActividadesEmpresaScreenState
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              "Eliminar",
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text("Eliminar", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -66,15 +64,13 @@ class _MisActividadesEmpresaScreenState
     if (!mounted) return;
 
     if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Actividad eliminada.")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text("Actividad eliminada.")));
       _refresh();
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("No se pudo eliminar la actividad."),
-        ),
+        const SnackBar(content: Text("No se pudo eliminar la actividad.")),
       );
     }
   }
@@ -82,7 +78,11 @@ class _MisActividadesEmpresaScreenState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text("Mis actividades")),
+      backgroundColor: secondaryColor,
+      appBar: AppBar(
+        title: const Text("Mis actividades"),
+        backgroundColor: primaryColor,
+      ),
       body: FutureBuilder<List<ActividadDto>>(
         future: _future,
         builder: (context, snapshot) {
@@ -96,9 +96,18 @@ class _MisActividadesEmpresaScreenState
             return RefreshIndicator(
               onRefresh: _refresh,
               child: ListView(
-                children: const [
-                  SizedBox(height: 200),
-                  Center(child: Text("No tenés actividades aún.")),
+                children: [
+                  const SizedBox(height: 200),
+                  Center(
+                    child: Text(
+                      "No tenés actividades aún.",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: primaryColor,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
                 ],
               ),
             );
@@ -111,20 +120,38 @@ class _MisActividadesEmpresaScreenState
               itemCount: actividades.length,
               itemBuilder: (context, index) {
                 final a = actividades[index];
-
                 return Card(
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 3,
+                  margin: const EdgeInsets.symmetric(vertical: 8),
+                  color: Colors.white,
                   child: ListTile(
-                    title: Text(a.nombreActividad),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Inicio: ${_formatFecha(a.fechaInicio)}"),
-                        Text("Fin: ${_formatFecha(a.fechaFin)}"),
-                        Text("Cupos: ${a.cupos} • Estado: ${a.estado}"),
-                      ],
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
+                    title: Text(
+                      a.nombreActividad,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
+                    subtitle: Padding(
+                      padding: const EdgeInsets.only(top: 6),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text("Inicio: ${_formatFecha(a.fechaInicio)}"),
+                          Text("Fin: ${_formatFecha(a.fechaFin)}"),
+                          Text("Cupos: ${a.cupos} • Estado: ${a.estado}"),
+                        ],
+                      ),
                     ),
                     trailing: IconButton(
-                      icon: const Icon(Icons.delete, color: Colors.red),
+                      icon: Icon(Icons.delete, color: Colors.red.shade400),
                       onPressed: () => _eliminarActividad(a),
                     ),
                   ),

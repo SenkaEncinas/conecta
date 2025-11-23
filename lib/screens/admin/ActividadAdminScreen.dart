@@ -14,6 +14,9 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
   final ActividadService _actividadService = ActividadService();
   late Future<List<ActividadDto>> _futureActividades;
 
+  final Color primaryColor = Colors.teal;
+  final Color secondaryColor = Colors.teal.shade50;
+
   @override
   void initState() {
     super.initState();
@@ -41,10 +44,7 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text(
-              "Eliminar",
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text("Eliminar", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -56,34 +56,35 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
 
     if (!mounted) return;
 
-    if (ok) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text("Actividad eliminada correctamente.")),
-      );
-      await _refresh();
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("No se pudo eliminar la actividad."),
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          ok
+              ? "Actividad eliminada correctamente."
+              : "No se pudo eliminar la actividad.",
         ),
-      );
-    }
+      ),
+    );
+
+    if (ok) await _refresh();
   }
 
   Future<void> _editarActividad(ActividadDto actividad) async {
     final parentContext = context;
 
-    final nombreController =
-        TextEditingController(text: actividad.nombreActividad);
-    final descripcionController =
-        TextEditingController(text: actividad.descripcion ?? '');
-    final cuposController =
-        TextEditingController(text: actividad.cupos.toString());
+    final nombreController = TextEditingController(
+      text: actividad.nombreActividad,
+    );
+    final descripcionController = TextEditingController(
+      text: actividad.descripcion ?? '',
+    );
+    final cuposController = TextEditingController(
+      text: actividad.cupos.toString(),
+    );
 
-    // estado en DTO es bool, pero en ActividadDto es String
-    final estadoLower = actividad.estado.toLowerCase();
     bool estadoActiva =
-        estadoLower == "disponible" || estadoLower == "activa";
+        actividad.estado.toLowerCase() == "disponible" ||
+        actividad.estado.toLowerCase() == "activa";
 
     final result = await showDialog<bool>(
       context: context,
@@ -104,29 +105,27 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
                 TextField(
                   controller: descripcionController,
                   maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: "Descripción",
-                  ),
+                  decoration: const InputDecoration(labelText: "Descripción"),
                 ),
                 const SizedBox(height: 8),
                 TextField(
                   controller: cuposController,
                   keyboardType: TextInputType.number,
-                  decoration: const InputDecoration(
-                    labelText: "Cupos",
-                  ),
+                  decoration: const InputDecoration(labelText: "Cupos"),
                 ),
                 const SizedBox(height: 8),
                 Row(
                   children: [
                     const Text("Activa"),
                     const Spacer(),
-                    Switch(
-                      value: estadoActiva,
-                      onChanged: (val) {
-                        estadoActiva = val;
-                        // necesario para que se actualice el switch
-                        (dialogContext as Element).markNeedsBuild();
+                    StatefulBuilder(
+                      builder: (context, setStateSwitch) {
+                        return Switch(
+                          value: estadoActiva,
+                          onChanged: (val) {
+                            setStateSwitch(() => estadoActiva = val);
+                          },
+                        );
                       },
                     ),
                   ],
@@ -161,9 +160,7 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
                 final cupos = int.tryParse(cuposStr);
                 if (cupos == null || cupos < 0) {
                   ScaffoldMessenger.of(parentContext).showSnackBar(
-                    const SnackBar(
-                      content: Text("Cupos inválidos."),
-                    ),
+                    const SnackBar(content: Text("Cupos inválidos.")),
                   );
                   return;
                 }
@@ -173,7 +170,6 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
                   descripcion: descripcionController.text.trim().isEmpty
                       ? null
                       : descripcionController.text.trim(),
-                  // Por ahora NO cambiamos fechas desde el admin:
                   fechaInicio: actividad.fechaInicio,
                   fechaFin: actividad.fechaFin,
                   cupos: cupos,
@@ -185,21 +181,19 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
                   dto,
                 );
 
-                if (ok) {
-                  if (!mounted) return;
-                  ScaffoldMessenger.of(parentContext).showSnackBar(
-                    const SnackBar(
-                      content: Text("Actividad actualizada correctamente."),
+                if (!mounted) return;
+
+                ScaffoldMessenger.of(parentContext).showSnackBar(
+                  SnackBar(
+                    content: Text(
+                      ok
+                          ? "Actividad actualizada correctamente."
+                          : "No se pudo actualizar la actividad.",
                     ),
-                  );
-                  Navigator.pop(dialogContext, true);
-                } else {
-                  ScaffoldMessenger.of(parentContext).showSnackBar(
-                    const SnackBar(
-                      content: Text("No se pudo actualizar la actividad."),
-                    ),
-                  );
-                }
+                  ),
+                );
+
+                if (ok) Navigator.pop(dialogContext, true);
               },
               child: const Text("Guardar"),
             ),
@@ -208,9 +202,7 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
       },
     );
 
-    if (result == true) {
-      _refresh();
-    }
+    if (result == true) _refresh();
   }
 
   String _formatFecha(DateTime fecha) {
@@ -223,9 +215,12 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: secondaryColor,
       appBar: AppBar(
         title: const Text("Actividades (Admin)"),
         centerTitle: true,
+        backgroundColor: primaryColor,
+        elevation: 4,
       ),
       body: FutureBuilder<List<ActividadDto>>(
         future: _futureActividades,
@@ -240,78 +235,101 @@ class _ActividadesAdminScreenState extends State<ActividadesAdminScreen> {
 
           final actividades = snapshot.data ?? [];
 
-          if (actividades.isEmpty) {
-            return RefreshIndicator(
-              onRefresh: _refresh,
-              child: ListView(
-                children: const [
-                  SizedBox(height: 250),
-                  Center(child: Text("No hay actividades registradas")),
-                ],
-              ),
-            );
-          }
-
           return RefreshIndicator(
             onRefresh: _refresh,
-            child: ListView.builder(
-              padding: const EdgeInsets.all(12),
-              itemCount: actividades.length,
-              itemBuilder: (context, index) {
-                final a = actividades[index];
+            child: actividades.isEmpty
+                ? ListView(
+                    children: const [
+                      SizedBox(height: 250),
+                      Center(child: Text("No hay actividades registradas")),
+                    ],
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: actividades.length,
+                    itemBuilder: (context, index) {
+                      final a = actividades[index];
+                      final esActiva =
+                          a.estado.toLowerCase() == "disponible" ||
+                          a.estado.toLowerCase() == "activa";
 
-                final estadoTexto = a.estado;
-                final estadoLower = estadoTexto.toLowerCase();
-                final esActiva =
-                    estadoLower == "disponible" || estadoLower == "activa";
-
-                return Card(
-                  elevation: 2,
-                  child: ListTile(
-                    leading: const Icon(Icons.event),
-                    title: Text(a.nombreActividad),
-                    subtitle: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text("Empresa: ${a.nombreEmpresa}"),
-                        Text(
-                          "Del ${_formatFecha(a.fechaInicio)} "
-                          "al ${_formatFecha(a.fechaFin)}",
+                      return Card(
+                        elevation: 3,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        Text("Cupos: ${a.cupos}"),
-                        Text(
-                          "Estado: $estadoTexto",
-                          style: TextStyle(
-                            color: esActiva ? Colors.green : Colors.red,
-                            fontWeight: FontWeight.w600,
+                        margin: const EdgeInsets.symmetric(vertical: 6),
+                        child: ListTile(
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 8,
+                            horizontal: 16,
+                          ),
+                          leading: const Icon(Icons.event, color: Colors.teal),
+                          title: Text(
+                            a.nombreActividad,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                "Empresa: ${a.nombreEmpresa}",
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                              Text(
+                                "Del ${_formatFecha(a.fechaInicio)} al ${_formatFecha(a.fechaFin)}",
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                              Text(
+                                "Cupos: ${a.cupos}",
+                                style: const TextStyle(fontSize: 13),
+                              ),
+                              Text(
+                                "Estado: ${a.estado}",
+                                style: TextStyle(
+                                  color: esActiva ? Colors.green : Colors.red,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                              if (a.descripcion != null &&
+                                  a.descripcion!.isNotEmpty)
+                                Text(
+                                  a.descripcion!,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                            ],
+                          ),
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.edit,
+                                  color: Colors.blue,
+                                ),
+                                onPressed: () => _editarActividad(a),
+                              ),
+                              IconButton(
+                                icon: const Icon(
+                                  Icons.delete,
+                                  color: Colors.red,
+                                ),
+                                onPressed: () => _eliminarActividad(a),
+                              ),
+                            ],
                           ),
                         ),
-                        if (a.descripcion != null &&
-                            a.descripcion!.isNotEmpty)
-                          Text(
-                            a.descripcion!,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                      ],
-                    ),
-                    trailing: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.edit, color: Colors.blue),
-                          onPressed: () => _editarActividad(a),
-                        ),
-                        IconButton(
-                          icon: const Icon(Icons.delete, color: Colors.red),
-                          onPressed: () => _eliminarActividad(a),
-                        ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
-                );
-              },
-            ),
           );
         },
       ),

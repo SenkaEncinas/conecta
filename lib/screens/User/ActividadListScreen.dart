@@ -35,9 +35,14 @@ class _ActividadesListScreenState extends State<ActividadesListScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final primaryColor = Colors.blue.shade700;
+
     return Scaffold(
+      backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: const Text("Actividades disponibles"),
+        backgroundColor: primaryColor,
+        elevation: 0,
       ),
       body: FutureBuilder<List<ActividadDto>>(
         future: _futureActividades,
@@ -72,35 +77,130 @@ class _ActividadesListScreenState extends State<ActividadesListScreen> {
               itemBuilder: (context, index) {
                 final a = actividades[index];
 
-                return Card(
-                  child: ListTile(
-                    leading: const Icon(Icons.event),
-                    title: Text(a.nombreActividad),
-                    subtitle: Column(
+                return GestureDetector(
+                  onTap: () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => ActividadDetalleScreen(actividad: a),
+                    ),
+                  ),
+                  child: Container(
+                    margin: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.05),
+                          blurRadius: 10,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text("Empresa: ${a.nombreEmpresa}"),
-                        if (a.descripcion != null &&
-                            a.descripcion!.isNotEmpty)
+                        // Título
+                        Text(
+                          a.nombreActividad,
+                          style: const TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+
+                        // Empresa
+                        Text(
+                          "Empresa: ${a.nombreEmpresa}",
+                          style: const TextStyle(
+                            fontSize: 14,
+                            color: Colors.grey,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+
+                        // Descripción
+                        if (a.descripcion != null && a.descripcion!.isNotEmpty)
                           Text(
                             a.descripcion!,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(fontSize: 14),
                           ),
-                        Text("Inicio: ${_formatFecha(a.fechaInicio)}"),
-                        Text("Fin: ${_formatFecha(a.fechaFin)}"),
-                        Text("Cupos: ${a.cupos} • Estado: ${a.estado}"),
+                        const SizedBox(height: 8),
+
+                        // Info inferior
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.calendar_today,
+                                  size: 16,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _formatFecha(a.fechaInicio),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Icon(
+                                  Icons.calendar_today_outlined,
+                                  size: 16,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  _formatFecha(a.fechaFin),
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.group,
+                                  size: 16,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  "${a.cupos} cupos",
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                const Icon(
+                                  Icons.info_outline,
+                                  size: 16,
+                                  color: Colors.grey,
+                                ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  a.estado,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
                       ],
                     ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (_) =>
-                              ActividadDetalleScreen(actividad: a),
-                        ),
-                      );
-                    },
                   ),
                 );
               },
